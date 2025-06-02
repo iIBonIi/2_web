@@ -1,41 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Анкета</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <?php foreach ($messages as $m): ?>
+    <div class="error"><?= $m ?></div>
+  <?php endforeach; ?>
 
-<?php
-require 'config.php';
+  <form method="post">
+    <div class="form-group">
+      <label>ФИО:
+        <input name="full_name" value="<?= e($values['full_name']) ?>">
+      </label>
+    </div>
 
-function validate($name, $email, $message) {
-    if (empty($name) || strlen($name) > 100) return "Имя должно быть непустым и до 100 символов.";
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return "Неверный формат email.";
-    if (strlen($message) > 1000) return "Сообщение слишком длинное (макс. 1000 символов).";
-    return "";
-}
+    <div class="form-group">
+      <label>Телефон:
+        <input name="phone" value="<?= e($values['phone']) ?>">
+      </label>
+    </div>
 
-$name = trim($_POST['name'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$message = trim($_POST['message'] ?? '');
+    <div class="form-group">
+      <label>Email:
+        <input name="email" value="<?= e($values['email']) ?>">
+      </label>
+    </div>
 
-$error = validate($name, $email, $message);
-if ($error) {
-    echo "Ошибка: $error<br><a href='index.php'>Назад</a>";
-    exit;
-}
+    <div class="form-group">
+      <label>Дата рождения:
+        <input type="date" name="birthdate" value="<?= e($values['birthdate']) ?>">
+      </label>
+    </div>
 
-if (!isset($_SESSION['user'])) {
-    setcookie("name", $name, time() + 3600);
-    setcookie("email", $email, time() + 3600);
-    setcookie("message", $message, time() + 3600);
+    <div class="form-group">
+      <label>Пол:
+        <select name="gender">
+          <option value="male"   <?= ($values['gender'] === 'male')   ? 'selected' : '' ?>>М</option>
+          <option value="female" <?= ($values['gender'] === 'female') ? 'selected' : '' ?>>Ж</option>
+        </select>
+      </label>
+    </div>
 
-    $login = uniqid("user");
-    $password = bin2hex(random_bytes(4));
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+    <div class="form-group">
+      <label>Биография:
+        <textarea name="biography"><?= e($values['biography']) ?></textarea>
+      </label>
+    </div>
 
-    $stmt = $pdo->prepare("INSERT INTO users (login, password_hash, name, email, message) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$login, $password_hash, $name, $email, $message]);
+    <div class="form-group">
+      <label>Языки программирования:</label>
+      <div class="checkbox-group">
+        <?php
+        foreach (db()->query('SELECT id, name FROM programming_languages') as $lang) {
+          $checked = in_array($lang['id'], $values['langs']) ? 'checked' : '';
+          echo "<label><input type=\"checkbox\" name=\"langs[]\" value=\"{$lang['id']}\" {$checked}> {$lang['name']}</label>";
+        }
+        ?>
+      </div>
+    </div>
 
-    echo "Ваш логин: $login<br>Ваш пароль: $password<br>Сохраните их!";
-} else {
-    $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, message = ? WHERE login = ?");
-    $stmt->execute([$name, $email, $message, $_SESSION['user']]);
-    echo "Данные обновлены.";
-}
-?>
-<br><a href='index.php'>Назад</a>
+    <div class="form-group agreement">
+      <input type="checkbox" name="agreement" value="1" <?= ($values['agreement'] ? 'checked' : '') ?>>
+      <label>Соглашаюсь с обработкой данных</label>
+    </div>
+
+    <button type="submit">Сохранить</button>
+  </form>
+</body>
+</html>
